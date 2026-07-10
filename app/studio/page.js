@@ -1,72 +1,122 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
+
+const conceptStyles = [
+  "Coastal Teal",
+  "Sunset Coral",
+  "Stealth Black",
+  "Retro Surf",
+  "Electric Blue",
+  "Candy Red",
+  "Desert Camo",
+  "Pearl White",
+  "Chrome Silver",
+  "Custom Mix",
+];
 
 export default function StudioPage() {
+  const [bikeImage, setBikeImage] = useState("");
+  const [bikeFileName, setBikeFileName] = useState("");
+  const [selectedStyle, setSelectedStyle] = useState("");
+  const [description, setDescription] = useState("");
+  const [concepts, setConcepts] = useState([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (bikeImage) {
+        URL.revokeObjectURL(bikeImage);
+      }
+    };
+  }, [bikeImage]);
+
+  function handleBikeUpload(event) {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file.");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      alert("Please select an image smaller than 10 MB.");
+      return;
+    }
+
+    if (bikeImage) {
+      URL.revokeObjectURL(bikeImage);
+    }
+
+    const imageUrl = URL.createObjectURL(file);
+
+    setBikeImage(imageUrl);
+    setBikeFileName(file.name);
+    setConcepts([]);
+  }
+
+  function generateConcepts() {
+    if (!bikeImage) {
+      alert("Upload a photo of your e-bike first.");
+      return;
+    }
+
+    if (!selectedStyle) {
+      alert("Choose a design style first.");
+      return;
+    }
+
+    setIsGenerating(true);
+    setConcepts([]);
+
+    window.setTimeout(() => {
+      setConcepts(
+        conceptStyles.map((name, index) => ({
+          id: index + 1,
+          name,
+          className: `concept-${index + 1}`,
+        }))
+      );
+
+      setIsGenerating(false);
+    }, 1200);
+  }
+
+  function resetStudio() {
+    if (bikeImage) {
+      URL.revokeObjectURL(bikeImage);
+    }
+
+    setBikeImage("");
+    setBikeFileName("");
+    setSelectedStyle("");
+    setDescription("");
+    setConcepts([]);
+  }
+
   return (
     <main className="page">
       <div className="wrap">
         <nav className="nav">
-          <Link href="/" className="brand">Beach House<span>CREATIVES</span></Link>
+          <Link href="/" className="brand">
+            Beach House
+            <span>CREATIVES</span>
+          </Link>
+
           <div className="navlinks">
-            <Link className="pill" href="/">Home</Link>
-            <Link className="pill" href="/pricing">Pricing</Link>
-            <Link className="pill" href="/shops">Paint Shops</Link>
-            <Link className="pill" href="/dashboard">Dashboard</Link>
-          </div>
-        </nav>
-
-        <section className="hero">
-          <div className="eyebrow">Upload Your Bike</div>
-          <h1>Start your custom e-bike paint design.</h1>
-          <p className="lead">
-            Upload a bike photo, describe the style, and request AI-generated paint concepts from Beach House Creatives.
-          </p>
-        </section>
-
-        <section className="section grid">
-          <div className="card">
-            <h2>Design Request</h2>
-            <p>
-              Use this starter form for the first live version. Next we can connect photo upload,
-              OpenAI image generation, and Stripe checkout.
-            </p>
-
-            <input placeholder="Your name" />
-            <input placeholder="Email address" />
-            <input placeholder="E-bike make and model" />
-
-            <select defaultValue="">
-              <option value="" disabled>Choose a style</option>
-              <option>Surf & Coastal</option>
-              <option>Racing & Speed</option>
-              <option>Stealth Matte</option>
-              <option>Retro Vintage</option>
-              <option>Neon Cyber</option>
-              <option>Camo Adventure</option>
-              <option>Chrome Metallic</option>
-              <option>Custom Theme</option>
-            </select>
-
-            <textarea placeholder="Describe the paint design you want. Example: Ventura surf theme, teal and orange fade, matte black accents." />
-
-            <button>Request Design Preview</button>
-          </div>
-
-          <div className="card">
-            <h2>Preview Area</h2>
-            <div className="mock">
-              E-bike design preview will appear here
-              <span className="watermark">Beach House Creatives Preview</span>
-            </div>
-            <p className="tiny">
-              Future upgrade: uploaded bike image, 10 AI concepts, watermark preview, paid clean download.
-            </p>
-          </div>
-        </section>
-
-        <footer className="footer">
-          © Beach House Creatives — AI custom e-bike design studio.
-        </footer>
-      </div>
-    </main>
-  );
-}
+            <Link className="pill" href="/">
+              Home
+            </Link>
+            <Link className="pill" href="/pricing">
+              Pricing
+            </Link>
+            <Link className="pill" href="/shops">
+              Paint Shops
+            </Link>
+            <Link className="pill" href="/dashboard">
+              Dashboard
+            </Link>
+         
