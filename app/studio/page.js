@@ -304,6 +304,6 @@ export default function StudioPage() {
           © Beach House Creatives — AI custom e-bike design studio.
         </footer>
       </div>
-    </main>
+   </main>
   );
-              }
+}
