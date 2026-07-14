@@ -3,38 +3,24 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-const conceptStyles = [
-  "Coastal Teal",
-  "Sunset Coral",
-  "Stealth Black",
-  "Retro Surf",
-  "Electric Blue",
-  "Candy Red",
-  "Desert Camo",
-  "Pearl White",
-  "Chrome Silver",
-  "Custom Mix",
-];
-
 export default function StudioPage() {
   const [bikeImage, setBikeImage] = useState("");
+  const [bikeFile, setBikeFile] = useState(null);
   const [bikeFileName, setBikeFileName] = useState("");
   const [selectedStyle, setSelectedStyle] = useState("");
   const [description, setDescription] = useState("");
-  const [concepts, setConcepts] = useState([]);
+  const [generatedImage, setGeneratedImage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     return () => {
-      if (bikeImage) {
-        URL.revokeObjectURL(bikeImage);
-      }
+      if (bikeImage) URL.revokeObjectURL(bikeImage);
     };
   }, [bikeImage]);
 
   function handleBikeUpload(event) {
     const file = event.target.files?.[0];
-
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
@@ -47,19 +33,17 @@ export default function StudioPage() {
       return;
     }
 
-    if (bikeImage) {
-      URL.revokeObjectURL(bikeImage);
-    }
+    if (bikeImage) URL.revokeObjectURL(bikeImage);
 
-    const imageUrl = URL.createObjectURL(file);
-
-    setBikeImage(imageUrl);
+    setBikeFile(file);
+    setBikeImage(URL.createObjectURL(file));
     setBikeFileName(file.name);
-    setConcepts([]);
+    setGeneratedImage("");
+    setErrorMessage("");
   }
 
-  function generateConcepts() {
-    if (!bikeImage) {
+  async function generateConcept() {
+    if (!bikeFile) {
       alert("Upload a photo of your e-bike first.");
       return;
     }
@@ -70,31 +54,46 @@ export default function StudioPage() {
     }
 
     setIsGenerating(true);
-    setConcepts([]);
+    setGeneratedImage("");
+    setErrorMessage("");
 
-    window.setTimeout(() => {
-      setConcepts(
-        conceptStyles.map((name, index) => ({
-          id: index + 1,
-          name,
-          className: `concept-${index + 1}`,
-        }))
+    try {
+      const formData = new FormData();
+      formData.append("image", bikeFile);
+      formData.append("style", selectedStyle);
+      formData.append("description", description);
+
+      const response = await fetch("/api/generate-design", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "The design could not be generated.");
+      }
+
+      setGeneratedImage(data.image);
+    } catch (error) {
+      setErrorMessage(
+        error.message || "The design could not be generated."
       );
-
+    } finally {
       setIsGenerating(false);
-    }, 1200);
+    }
   }
 
   function resetStudio() {
-    if (bikeImage) {
-      URL.revokeObjectURL(bikeImage);
-    }
+    if (bikeImage) URL.revokeObjectURL(bikeImage);
 
     setBikeImage("");
+    setBikeFile(null);
     setBikeFileName("");
     setSelectedStyle("");
     setDescription("");
-    setConcepts([]);
+    setGeneratedImage("");
+    setErrorMessage("");
   }
 
   return (
@@ -107,18 +106,10 @@ export default function StudioPage() {
           </Link>
 
           <div className="navlinks">
-            <Link className="pill" href="/">
-              Home
-            </Link>
-            <Link className="pill" href="/pricing">
-              Pricing
-            </Link>
-            <Link className="pill" href="/shops">
-              Paint Shops
-            </Link>
-            <Link className="pill" href="/dashboard">
-              Dashboard
-            </Link>
+            <Link className="pill" href="/">Home</Link>
+            <Link className="pill" href="/pricing">Pricing</Link>
+            <Link className="pill" href="/shops">Paint Shops</Link>
+            <Link className="pill" href="/dashboard">Dashboard</Link>
           </div>
         </nav>
 
@@ -129,7 +120,7 @@ export default function StudioPage() {
 
           <p className="lead">
             Upload a clear side-view photograph, choose a paint direction,
-            and preview ten Beach House Creatives design concepts.
+            and generate a real AI custom-paint concept.
           </p>
         </section>
 
@@ -147,7 +138,9 @@ export default function StudioPage() {
               />
 
               <span className="upload-title">
-                {bikeImage ? "Choose a different photo" : "Choose bike photo"}
+                {bikeImage
+                  ? "Choose a different photo"
+                  : "Choose bike photo"}
               </span>
 
               <span className="upload-help">
@@ -161,15 +154,11 @@ export default function StudioPage() {
               </p>
             )}
 
-            <input placeholder="Your name" />
-
-            <input type="email" placeholder="Email address" />
-
-            <input placeholder="E-bike make and model" />
-
             <select
               value={selectedStyle}
-              onChange={(event) => setSelectedStyle(event.target.value)}
+              onChange={(event) =>
+                setSelectedStyle(event.target.value)
+              }
             >
               <option value="">Choose a design style</option>
               <option>Surf & Coastal</option>
@@ -184,19 +173,21 @@ export default function StudioPage() {
 
             <textarea
               value={description}
-              onChange={(event) => setDescription(event.target.value)}
+              onChange={(event) =>
+                setDescription(event.target.value)
+              }
               placeholder="Describe the design you want. Example: Ventura surf theme, teal and orange fade, matte black accents."
             />
 
             <button
               type="button"
               className="generate-button"
-              onClick={generateConcepts}
+              onClick={generateConcept}
               disabled={isGenerating}
             >
               {isGenerating
-                ? "Creating Concepts..."
-                : "Generate 10 Design Concepts"}
+                ? "Generating Real AI Design..."
+                : "Generate Real AI Design"}
             </button>
 
             <button
@@ -206,104 +197,111 @@ export default function StudioPage() {
             >
               Start Over
             </button>
+
+            {errorMessage && (
+              <p
+                style={{
+                  color: "#ff9b8a",
+                  fontWeight: 700,
+                }}
+              >
+                {errorMessage}
+              </p>
+            )}
           </div>
 
           <div className="card preview-card">
             <div className="step-label">Step 2</div>
-            <h2>Bike Preview</h2>
 
-            <div className={bikeImage ? "bike-preview active" : "bike-preview"}>
-              {bikeImage ? (
+            <h2>
+              {generatedImage
+                ? "AI Paint Concept"
+                : "Bike Preview"}
+            </h2>
+
+            <div
+              className={
+                bikeImage || generatedImage
+                  ? "bike-preview active"
+                  : "bike-preview"
+              }
+            >
+              {generatedImage ? (
                 <>
-                  <img src={bikeImage} alt="Uploaded e-bike preview" />
+                  <img
+                    src={generatedImage}
+                    alt="AI-generated e-bike paint concept"
+                  />
                   <span className="watermark">
                     Beach House Creatives Preview
+                  </span>
+                </>
+              ) : bikeImage ? (
+                <>
+                  <img
+                    src={bikeImage}
+                    alt="Uploaded e-bike preview"
+                  />
+                  <span className="watermark">
+                    Original Bike Preview
                   </span>
                 </>
               ) : (
                 <div className="empty-preview">
                   <strong>Your e-bike will appear here</strong>
-                  <span>Upload a clear photograph to begin.</span>
+                  <span>
+                    Upload a clear photograph to begin.
+                  </span>
                 </div>
               )}
             </div>
 
+            {isGenerating && (
+              <div
+                className="generation-status"
+                style={{ marginTop: 18 }}
+              >
+                <div className="loading-ring" />
+
+                <div>
+                  <h3>Creating your paint concept</h3>
+                  <p className="tiny">
+                    This may take up to a minute.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {generatedImage && (
+              <div className="actions">
+                <a
+                  className="button primary"
+                  href={generatedImage}
+                  download="beach-house-creatives-ebike-design.png"
+                >
+                  Download Preview
+                </a>
+
+                <Link
+                  className="button secondary"
+                  href="/pricing"
+                >
+                  Buy This Design
+                </Link>
+              </div>
+            )}
+
             <p className="tiny">
-              For the best result, use a bright, clear side-view photograph
-              with the full bike visible.
+              For the best result, use a bright, clear side-view
+              photograph with the full bike visible.
             </p>
           </div>
         </section>
-
-        {isGenerating && (
-          <section className="section">
-            <div className="card generation-status">
-              <div className="loading-ring" />
-              <div>
-                <h3>Preparing your design collection</h3>
-                <p>
-                  Building ten preview directions based on your selected style.
-                </p>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {concepts.length > 0 && (
-          <section className="section">
-            <div className="eyebrow">Step 3</div>
-            <h2>Your Design Concepts</h2>
-
-            <p>
-              These are demonstration preview treatments. The next connection
-              will replace them with actual OpenAI-generated bike designs.
-            </p>
-
-            <div className="concept-grid">
-              {concepts.map((concept) => (
-                <article
-                  className={`concept-card ${concept.className}`}
-                  key={concept.id}
-                >
-                  <div
-                    className="concept-image"
-                    style={{
-                      backgroundImage: bikeImage
-                        ? `linear-gradient(135deg, rgba(0,0,0,.08), rgba(0,0,0,.5)), url("${bikeImage}")`
-                        : "none",
-                    }}
-                  >
-                    <span className="concept-number">
-                      Concept {concept.id}
-                    </span>
-
-                    <span className="watermark">
-                      Beach House Creatives
-                    </span>
-                  </div>
-
-                  <div className="concept-details">
-                    <h3>{concept.name}</h3>
-
-                    <p className="tiny">
-                      {selectedStyle}
-                      {description ? ` — ${description}` : ""}
-                    </p>
-
-                    <Link className="button secondary" href="/pricing">
-                      Unlock Design
-                    </Link>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
-        )}
 
         <footer className="footer">
           © Beach House Creatives — AI custom e-bike design studio.
         </footer>
       </div>
-   </main>
+    </main>
   );
 }
