@@ -1,4 +1,4 @@
-Iimport OpenAI, { toFile } from "openai";
+import OpenAI, { toFile } from "openai";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
