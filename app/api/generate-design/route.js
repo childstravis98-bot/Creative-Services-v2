@@ -1,4 +1,4 @@
-import OpenAI, { toFile } from "openai";
+Iimport OpenAI, { toFile } from "openai";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -79,13 +79,13 @@ Do not add extra wheels, frames, handlebars or components.
 Do not include readable brand names, logos or watermarks.
 `;
 
-    const result = await openai.images.edit({
+    const result = await
+    openai.images.edit({
       model: "gpt-image-2",
       image: uploadedImage,
       prompt,
       size: "1024x1024",
       quality: "medium",
-      input_fidelity: "high",
     });
 
     const imageBase64 = result.data?.[0]?.b64_json;
